@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+	<meta charset="utf-8">
+	<title>PullCorner</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1">
+		<link rel="stylesheet" href="css/effect.css">
+
+<script src="http://cdnjs.cloudflare.com/ajax/libs/gsap/latest/TweenLite.min.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/gsap/latest/plugins/CSSPlugin.min.js"></script>
+
+<script src="js/FrameManager.min.js"></script>
+<script src="js/CanvasRender.min.js"></script>
+<script src="js/Tweaking.min.js"></script>
+<script src="js/Animation.min.js"></script>
+<script src="js/Demo.min.js"></script>
+</head>
+ <body>
+	<canvas id="canvas" width="1" height="1"></canvas>
+	<div id="point"><div class="ch-info"></div></div>
+
+<script type="text/javascript">
+(function() {
+	var Effect = function() {
+		var x, y;
+		var cornerX;
+		var _callback;
+
+		var tweaking = new Tweaking(0.400);
+
+		function _closing(start, end) {
+			tweaking.start(start, end,
+				function _onUpdate(value) {
+					cornerX = value;
+				},
+				function _onComplete() {
+					_callback();
+				}
+			);
+		}
+
+		function reset() {
+			cornerX = 1;
+		}
+
+		reset();
+
+		return {
+			getRender: function _getRender() {
+				var render = new CanvasRender();
+
+				if (!render.initialize(document.getElementById("canvas"), this)) return null;
+
+				return render;
+			},
+			
+			move: function _move(_x, _y) {
+				x = _x;
+				y = _y;
+			},
+
+			getTweaking: function _getTweaking() {
+				return 0.200;
+			},
+
+			draw: function _draw(canvas, context, backgroundTexture) {
+				if (backgroundTexture != undefined) {
+					context.drawImage(backgroundTexture, 0, 0, canvas.width, canvas.height);
+				}
+				
+				var width = canvas.width;
+				var height = canvas.height;
+
+				context.fillStyle="#000000";
+
+				context.beginPath();
+				context.moveTo(cornerX * width, 0);
+				context.lineTo(x * width, y * height);
+				context.lineTo(cornerX * width, height);
+				context.lineTo(width, height);
+				context.lineTo(width, 0);
+				context.fill();
+			},
+
+			endTweaking(callback) {
+				_callback = callback;
+
+				_closing(1, 0);
+
+				return true;
+			}
+		}
+	}
+
+	window.addEventListener('load', function() {
+		var demo = new Demo(new Effect());
+	});
+})();
+</script>
+ </body>
+</html>

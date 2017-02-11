@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+	<meta charset="utf-8">
+	<title>Falling Split</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1">
+		<link rel="stylesheet" href="css/effect.css">
+
+<script src="http://cdnjs.cloudflare.com/ajax/libs/gsap/latest/TweenLite.min.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/gsap/latest/plugins/CSSPlugin.min.js"></script>
+
+<script src="js/FrameManager.min.js"></script>
+<script src="js/CanvasRender.min.js"></script>
+<script src="js/Tweaking.min.js"></script>
+<script src="js/Animation.min.js"></script>
+<script src="js/Demo.min.js"></script>
+</head>
+ <body>
+	<canvas id="canvas" width="1" height="1"></canvas>
+	<div id="point"><div class="ch-info"></div></div>
+
+<script type="text/javascript">
+(function() {
+	var Effect = function() {
+		const side = true;
+
+		var x, y;
+		var cornerX;
+		var _callback;
+
+		var tweaking = new Tweaking(0.400);
+
+		function _closing(start, end) {
+			tweaking.start(start, end,
+				function _onUpdate(value) {
+					cornerX = value;
+				},
+				function _onComplete() {
+					_callback();
+				}
+			);
+		}
+
+		const columnNumber = 8;
+		const movingDuration = 2;
+		const tweakingDuration = 1.2;
+		const startDuration = 0.6;
+		let columns = [];
+		
+		function reset() {
+			for (var i = 0; i < columnNumber; i++) {
+				columns[i] = {translate: 1, y: 0, opacity: 1, go: false};
+			}
+		}
+
+		function animating() {
+			let delay = startDuration/columnNumber;
+
+			for (var i = 0; i < columnNumber; i++) {
+				TweenLite.to(columns[i], movingDuration, {y: columns[i].translate, opacity: 0,
+					delay: side ? (columnNumber-1-i)*delay: i*delay, ease: Power2.easeOut});
+			}
+
+			setTimeout(function() {
+				_callback();
+			}, (movingDuration)*1000);
+		}
+
+		function animateColumn(n) {
+			if (columns[n].go) return;
+			columns[n].go = true;
+
+			TweenLite.to(columns[n], movingDuration, {y: columns[n].translate, opacity: 0,
+				ease: Power2.easeOut});
+		}
+
+
+		reset();
+
+		return {
+			getRender: function _getRender() {
+				var render = new CanvasRender();
+
+				if (!render.initialize(document.getElementById("canvas"), this)) return null;
+
+				return render;
+			},
+			
+			move: function _move(_x, _y) {
+				x = _x;
+				y = _y;
+
+				if (x < 0.99) {
+					animateColumn(((columnNumber)*x)|0);
+				}
+			},
+
+			getTweaking: function _getTweaking() {
+				return 0;
+			},
+
+			draw: function _draw(canvas, context, backgroundTexture) {
+				var width = canvas.width;
+				var height = canvas.height;
+
+				const columnWidth = width/columnNumber;
+			    const backgroundWidth = backgroundTexture.width/columnNumber;
+
+				context.fillStyle="#000000";
+				context.fillRect(0, 0, width, height);
+
+				if (backgroundTexture != undefined) {
+					for (var i = 0; i < columnNumber; i++) {
+						context.save();
+						context.globalAlpha = columns[i].opacity;
+						context.drawImage(backgroundTexture, i*backgroundWidth, 0, backgroundWidth, backgroundTexture.height, i*columnWidth, columns[i].y*height, columnWidth, height);
+						context.restore();
+					}
+				}
+			},
+
+			endTweaking(callback) {
+				_callback = callback;
+				animating();
+
+				return true;
+			}
+		}
+	}
+
+	window.addEventListener('load', function() {
+		var demo = new Demo(new Effect());
+	});
+})();
+</script>
+ </body>
+</html>

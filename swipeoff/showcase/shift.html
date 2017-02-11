@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+	<meta charset="utf-8">
+	<title>Shift</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1">
+	<link rel="stylesheet" href="css/effect.css">
+
+<script id="vertexShader" type="x-shader/x-vertex">
+attribute vec3 vertexPosition;
+attribute vec3 a_color;
+attribute vec2 aTextureCoord;
+
+uniform vec4 u_StripVertexData;
+
+varying vec4 vertexColor;
+varying vec2 vTextureCoord;
+
+void main(void) {
+	vec4 position = vec4(vertexPosition, 1.0);
+	position.x += u_StripVertexData.x;
+	position.z += u_StripVertexData.z;
+
+	gl_Position = position;
+
+	vertexColor = vec4(a_color, 1.0);
+	vTextureCoord = aTextureCoord;
+}
+</script>
+
+<script id="fragmentShader" type="x-shader/x-fragment">
+precision mediump float;
+
+varying lowp vec4 vertexColor;
+varying vec2 vTextureCoord;
+
+uniform mediump float time;
+uniform vec4 u_StripFragmentData;
+uniform sampler2D uSampler;
+
+void main(void) {
+	vec4 texColor = texture2D(uSampler, vTextureCoord);
+	vec3 col = texColor.rgb;
+
+	col = mix(col, vec3(0.), u_StripFragmentData.x);
+
+	gl_FragColor = vec4(col, 1.0);
+}
+</script>
+
+<script src="http://cdnjs.cloudflare.com/ajax/libs/gsap/latest/TweenLite.min.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/gsap/latest/plugins/CSSPlugin.min.js"></script>
+
+<script src="js/FrameManager.min.js"></script>
+<script src="js/Render.min.js"></script>
+<script src="js/Tweaking.min.js"></script>
+<script src="js/Animation.min.js"></script>
+<script src="js/Demo.min.js"></script>
+</head>
+<body>
+	<canvas id="glCanvas"></canvas>
+	<div id="point"><div class="ch-info"></div></div>
+
+<script type="text/javascript">
+(function() {
+	window.addEventListener('load', function() {
+		var demo = new Demo(new function() {
+
+			var fragmentData = {
+				vertex: [0, 0, 0, 0],
+				fragment: [0, 0, 0, 0]
+			};
+
+			return {
+				getRender: function _getRender() {
+					var render = new Render();
+
+					if (!render.initialize(
+						document.getElementById("glCanvas"),
+						document.getElementById('vertexShader').text,
+						document.getElementById('fragmentShader').text
+					)) return null;
+
+					return render;
+				},
+
+				getFragmentData: function _fragmentData() {
+					return fragmentData;
+				},
+
+				getTweaking: function _getTweaking() {
+					return 0.450;
+				},
+
+				move: function _move(x, y) {
+					var _x = (1.0 - x)*2;
+					fragmentData.vertex = [-_x, 0, 0, 0];
+
+					var shifted = _x/2.0;// 0-1
+					fragmentData.fragment = [shifted*0.8, 0, 0, 0];
+				},
+
+				endTweaking(callback) {
+					return false;
+				}
+			}
+		});
+	});
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+	<meta charset="utf-8">
+	<title>Elastic Pull</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1">
+		<link rel="stylesheet" href="css/effect.css">
+
+<script src="http://cdnjs.cloudflare.com/ajax/libs/gsap/latest/TweenLite.min.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/gsap/latest/plugins/CSSPlugin.min.js"></script>
+
+<script src="js/FrameManager.min.js"></script>
+<script src="js/CanvasRender.min.js"></script>
+<script src="js/Tweaking.min.js"></script>
+<script src="js/Animation.min.js"></script>
+<script src="js/Demo.min.js"></script>
+</head>
+ <body>
+	<canvas id="canvas" width="1" height="1"></canvas>
+	<div id="point"><div class="ch-info"></div></div>
+
+<script type="text/javascript">
+(function() {
+	var Effect = function() {
+		const side = true;
+		
+		var x, y;
+		var _callback;
+
+		var tweaking = new Tweaking(0.400);
+
+		function _closing(start, end) {
+			tweaking.start(start, end,
+				function _onUpdate(value) {
+					x = value;
+				},
+				function _onComplete() {
+					_callback();
+				},
+				Power3.easeIn
+			);
+		}
+
+		var animating = false;
+		var close = false;
+
+		var easings = {
+			smallElastic: function(t,b,c,d) {
+				var ts = (t/=d)*t;
+				var tc = ts*t;
+				return b+c*(33*tc*ts + -106*ts*ts + 126*tc + -67*ts + 15*t);
+			},
+
+			inCubic: function(t,b,c,d) {
+				var tc = (t/=d)*t*t;
+				return b+c*(tc);
+			}
+		};
+
+		var steps = Math.floor(600 / (1000 / 60));
+		var curStep = 0;
+		var nextTop;
+		var nextX;
+
+		return {
+			getRender: function _getRender() {
+				var render = new CanvasRender();
+
+				if (!render.initialize(document.getElementById("canvas"), this)) return null;
+
+				return render;
+			},
+			
+			move: function _move(_x, _y) {
+				x = _x;
+				y = _y;
+			},
+
+			getTweaking: function _getTweaking() {
+				return 0;
+			},
+
+			draw: function _draw(canvas, context, backgroundTexture) {
+				if (backgroundTexture != undefined) {
+					context.drawImage(backgroundTexture, 0, 0, canvas.width, canvas.height);
+				}
+
+				var width = canvas.width;
+				var height = canvas.height;
+
+
+				if (animating) {
+					curStep++;
+
+					if (side) {
+						var swing = (1 - x) * width/2;
+
+						nextTop = easings.smallElastic(curStep, 0, (1 - x) * width, steps);
+						nextX = easings.smallElastic(curStep, swing, -swing, steps);
+					} else {
+						var swing = x * width/2;
+
+						nextTop = easings.smallElastic(curStep, 0, x * width, steps);
+						nextX = easings.smallElastic(curStep, swing, -swing, steps);
+					}
+
+					context.fillStyle="#000000";
+
+					context.beginPath();
+
+					if (side) {
+						context.moveTo(width, 0);
+						context.ellipse(width - nextTop, height/2, Math.abs(nextX), height/2, 0, -Math.PI/2, Math.PI/2, (nextX < 0));
+						context.lineTo(width, height);
+					} else {
+						context.moveTo(0, 0);
+						context.ellipse(nextTop, height/2, Math.abs(nextX), height/2, 0, -Math.PI/2, Math.PI/2, (nextX < 0));
+						context.lineTo(0, height);
+					}
+		
+					context.fill();
+
+					if (curStep > steps) {
+						animating = false;
+						close = true;
+						_closing(x, side ? 0 : 1);
+
+						return;
+					}
+				} else if (close) {
+					context.fillStyle="#000000";
+
+					context.beginPath();
+
+					if (side) {
+						context.moveTo(width, 0);
+						context.lineTo(x * width, 0);
+						context.lineTo(x * width, height);
+						context.lineTo(width, height);
+					} else {
+						context.moveTo(0, 0);
+						context.lineTo(x * width, 0);
+						context.lineTo(x * width, height);
+						context.lineTo(0, height);
+					}
+					
+					context.fill();
+				} else {
+					context.fillStyle="#000000";
+
+					context.beginPath();
+
+					if (side) {
+						context.moveTo(width, 0);
+						var radiusX = (1 - x) * width/2;
+						context.ellipse(width, height/2, radiusX, height/2, 0, -Math.PI/2, Math.PI/2, true);
+						context.lineTo(width, height);						
+					} else {
+						context.moveTo(0, 0);
+						var radiusX = x * width/2;
+						context.ellipse(0, height/2, radiusX, height/2, 0, -Math.PI/2, Math.PI/2, false);
+						context.lineTo(0, height);
+					}
+					
+					context.fill();
+				}
+			},
+
+			endTweaking(callback) {
+				_callback = callback;
+				animating = true;
+
+				return true;
+			}
+		}
+	}
+
+	window.addEventListener('load', function() {
+		var demo = new Demo(new Effect());
+	});
+})();
+</script>
+ </body>
+</html>
